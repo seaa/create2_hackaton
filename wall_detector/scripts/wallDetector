@@ -25,10 +25,6 @@ class wall_detector(object):
         self.msg.right = 0
         self.msg.aligned_left = 0
 
-        self.leftIR = ['base_irbumper_left', 'base_irbumper_front_left'];
-        self.rightIR = ['base_irbumper_right', 'base_irbumper_front_right'];
-        self.centerIR = ['base_irbumper_center_left', 'base_irbumper_center_right'];
-
         self.threshold = 150
         self.parallelBoundaries = {'min': 50, 'max': 100}
 
