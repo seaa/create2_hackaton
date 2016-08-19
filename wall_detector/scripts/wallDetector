@@ -50,10 +50,10 @@ class wall_detector(object):
     def run(self):
         rospy.loginfo("RUNNING")
         rate = rospy.Rate(10) # 10hz
-        rospy.spin()
         while not rospy.is_shutdown():
             self.pub.publish(self.msg)
             rate.sleep()
+            # rospy.spin()
 
 if __name__ == "__main__":
     wd = wall_detector()
