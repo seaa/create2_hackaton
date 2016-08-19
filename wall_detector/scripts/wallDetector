@@ -8,44 +8,48 @@ class wall_detector(object):
     def __init__(self):
         rospy.init_node('wallDetector')
 
+        # light bumper model
+        self.bumper = {
+            'base_irbumper_left': 0,
+            'base_irbumper_front_left': 0,
+            'base_irbumper_right': 0,
+            'base_irbumper_front_right': 0,
+            'base_irbumper_center_left': 0,
+            'base_irbumper_center_right': 0
+        }
+
         # defaults
         self.msg = Walls()
         self.msg.left = 0
         self.msg.center = 0
         self.msg.right = 0
+        self.msg.aligned_left = 0
 
         self.leftIR = ['base_irbumper_left', 'base_irbumper_front_left'];
         self.rightIR = ['base_irbumper_right', 'base_irbumper_front_right'];
         self.centerIR = ['base_irbumper_center_left', 'base_irbumper_center_right'];
 
         self.threshold = 150
+        self.parallelBoundaries = {'min': 50, 'max': 100}
 
         self.pub = rospy.Publisher('/wall_detector', Walls, queue_size=10)
         rospy.Subscriber("/iRobot_0/ir_bumper", RoombaIR, self.callback)
 
     def callback(self, data):
-        leftHit = (data.header.frame_id in self.leftIR and data.signal > self.threshold)
-        centerHit = (data.header.frame_id in self.centerIR and data.signal > self.threshold)
-        rightHit = (data.header.frame_id in self.rightIR and data.signal > self.threshold)
-
-        # too close!
-        if leftHit:
-            rospy.loginfo(rospy.get_caller_id() + "left wall found")
-            self.msg.left = 1
+        if data.signal > self.threshold:
+            rospy.loginfo(rospy.get_caller_id() + ' ' + data.header.frame_id + ' found a wall')
+            self.bumper[data.header.frame_id] = 1
         else:
-            self.msg.left = 0
+            self.bumper[data.header.frame_id] = 0
 
-        if centerHit:
-            rospy.loginfo(rospy.get_caller_id() + "center wall found")
-            self.msg.center = 1
-        else:
-            self.msg.center = 0
+        # reduce to get left, center, right values
+        values = self._compressReadings(self.bumper.values())
+        self.msg.left = 1 if values[0] > 1 else 0
+        self.msg.center = 1 if values[1] > 1 else 0
+        self.msg.right = 1 if values[2] > 1 else 0
 
-        if rightHit:
-            rospy.loginfo(rospy.get_caller_id() + "right wall found")
-            self.msg.right = 1
-        else:
-            self.msg.right = 0
+        diff = self.bumper['base_irbumper_front_left'] - self.bumper['base_irbumper_left']
+        self.msg.aligned_left = 1 if self.parallelBoundaries['min'] < diff < self.parallelBoundaries['max'] else 0
 
     def run(self):
         rospy.loginfo("RUNNING")
@@ -53,6 +57,12 @@ class wall_detector(object):
         while not rospy.is_shutdown():
             self.pub.publish(self.msg)
             rate.sleep()
+
+    def _compressReadings(self, list):
+        l = list
+        while l.len > 3:
+            l = [(x + y) for (x, y) in zip(l[:-1], L[1:])]
+        return l
 
 if __name__ == "__main__":
     wd = wall_detector()
