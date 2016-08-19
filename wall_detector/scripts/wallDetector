@@ -53,7 +53,6 @@ class wall_detector(object):
         while not rospy.is_shutdown():
             self.pub.publish(self.msg)
             rate.sleep()
-            # rospy.spin()
 
 if __name__ == "__main__":
     wd = wall_detector()
