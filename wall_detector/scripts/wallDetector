@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+import rospy
+from irobotcreate2.msg import RoombaIR
+from wall_detector.msg import Walls
+
+class wall_detector(object):
+    def __init__(self):
+
+        # defaults
+        self.msg = Walls()
+        msg.left = false
+        msg.center = false
+        msg.right = false
+
+        self.leftIR = ['base_irbumper_left', 'base_irbumper_front_left'];
+        self.rightIR = ['base_irbumper_right', 'base_irbumper_front_right'];
+        self.centerIR = ['base_irbumper_center_left', 'base_irbumper_center_right'];
+
+        self.threshold = 150
+
+        rospy.init_node('wallDetector')
+        rospy.Subscriber("/iRobot_0/ir_bumper", RoombaIR, callback)
+
+        self.pub = rospy.Publisher('/wall_detector', wallMsg)
+
+    def callback(data):
+        leftHit = (data.header.frame_id in self.leftIR and data.signal > self.threshold)
+        centerHit = (data.header.frame_id in self.centerIR and data.signal > self.threshold)
+        rightHit = (data.header.frame_id in self.rightIR and data.signal > self.threshold)
+
+        # too close!
+        if leftHit:
+            rospy.loginfo(rospy.get_caller_id() + "left wall found")
+            self.msg.left = true
+        else:
+            self.msg.left = false
+
+        if centerHit:
+            rospy.loginfo(rospy.get_caller_id() + "center wall found")
+            self.msg.center = true
+        else:
+            self.msg.center = false
+
+        if rightHit:
+            rospy.loginfo(rospy.get_caller_id() + "right wall found")
+            self.msg.right = true
+        else:
+            self.msg.right = false
+
+    def run(self):
+        r = rospy.Rate(10) #10hz
+        while not rospy.is_shutdown():
+            self.pub.publish(self.msg)
+            r.sleep()
