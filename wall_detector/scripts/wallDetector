@@ -6,12 +6,13 @@ from wall_detector.msg import Walls
 
 class wall_detector(object):
     def __init__(self):
+        rospy.init_node('wallDetector')
 
         # defaults
         self.msg = Walls()
-        msg.left = false
-        msg.center = false
-        msg.right = false
+        self.msg.left = 0
+        self.msg.center = 0
+        self.msg.right = 0
 
         self.leftIR = ['base_irbumper_left', 'base_irbumper_front_left'];
         self.rightIR = ['base_irbumper_right', 'base_irbumper_front_right'];
@@ -19,12 +20,10 @@ class wall_detector(object):
 
         self.threshold = 150
 
-        rospy.init_node('wallDetector')
-        rospy.Subscriber("/iRobot_0/ir_bumper", RoombaIR, callback)
+        self.pub = rospy.Publisher('/wall_detector', Walls, queue_size=10)
+        rospy.Subscriber("/iRobot_0/ir_bumper", RoombaIR, self.callback)
 
-        self.pub = rospy.Publisher('/wall_detector', wallMsg)
-
-    def callback(data):
+    def callback(self, data):
         leftHit = (data.header.frame_id in self.leftIR and data.signal > self.threshold)
         centerHit = (data.header.frame_id in self.centerIR and data.signal > self.threshold)
         rightHit = (data.header.frame_id in self.rightIR and data.signal > self.threshold)
@@ -32,24 +31,30 @@ class wall_detector(object):
         # too close!
         if leftHit:
             rospy.loginfo(rospy.get_caller_id() + "left wall found")
-            self.msg.left = true
+            self.msg.left = 1
         else:
-            self.msg.left = false
+            self.msg.left = 0
 
         if centerHit:
             rospy.loginfo(rospy.get_caller_id() + "center wall found")
-            self.msg.center = true
+            self.msg.center = 1
         else:
-            self.msg.center = false
+            self.msg.center = 0
 
         if rightHit:
             rospy.loginfo(rospy.get_caller_id() + "right wall found")
-            self.msg.right = true
+            self.msg.right = 1
         else:
-            self.msg.right = false
+            self.msg.right = 0
 
     def run(self):
-        r = rospy.Rate(10) #10hz
+        rospy.loginfo("RUNNING")
+        rate = rospy.Rate(10) # 10hz
+        rospy.spin()
         while not rospy.is_shutdown():
             self.pub.publish(self.msg)
-            r.sleep()
+            rate.sleep()
+
+if __name__ == "__main__":
+    wd = wall_detector()
+    wd.run()
