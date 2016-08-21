@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+import rospy
+from std_msgs.msg import Int32
+from std_msgs.msg import String
+from geometry_msgs.msg import Twist
+from wall_detector.msg import Walls
+
+class WallFollower(object):
+    def __init__(self):
+        self.value = Twist()
+        rospy.init_node('WallFollower')
+        self.cmd_vel_pub = rospy.Publisher('/iRobot_0/cmd_vel', Twist, queue_size=10)
+        self.mode_pub = rospy.Publisher('/iRobot_0/mode', String, queue_size=10)
+        rospy.Subscriber('/wall_detector', Walls, self.wall_callback)
+
+    def wall_callback(self, msg):
+        if msg.right or msg.center or msg.left:
+            self.value.linear.x = 0
+            self.value.linear.y = 0
+            self.value.linear.z = 0
+            self.value.angular.x = 0
+            self.value.angular.y = 0
+            self.value.angular.z = 0
+            print self.value
+        else:
+            self.value.linear.x = 0.1
+            self.value.linear.y = 0.1
+            self.value.linear.z = 0
+            self.value.angular.x = 0
+            self.value.angular.y = 0
+            self.value.angular.z = 0
+        self.cmd_vel_pub.publish(self.value)
+
+    def run(self):
+        r = rospy.Rate(10)
+        print "Entering into full mode..."
+        self.mode_pub.publish("full")
+        print "Successfully entered into full mode"
+        while not rospy.is_shutdown():
+            r.sleep()
+
+# Main function.
+if __name__ == '__main__':
+    follower = WallFollower()
+    follower.run()
