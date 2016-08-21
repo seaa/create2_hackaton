@@ -57,7 +57,7 @@ class wall_detector(object):
     def _compressReadings(self, list):
         l = list
         while l.len > 3:
-            l = [(x + y) for (x, y) in zip(l[:-1], L[1:])]
+            l = [(x + y) for (x, y) in zip(l[:-1], l[1:])]
         return l
 
 if __name__ == "__main__":
